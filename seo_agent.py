@@ -30,6 +30,7 @@ except ModuleNotFoundError:
 
 COMPANY_FILE  = "company.txt"
 BLOG_FOLDER   = "blog"
+PROMPT_FILE   = "seo_agent_prompt.txt"
 MODEL         = "gpt-4o"
 RETRY_LIMIT   = 2
 RETRY_DELAY   = 3   # seconds between retry attempts
@@ -91,6 +92,24 @@ def parse_company_file(filepath: str) -> dict:
         raise ValueError("❌  NB_ARTICLES must be an integer (ex: NB_ARTICLES: 8)")
 
     return data
+
+
+# ─────────────────────────────────────────────────────────────
+# LOAD SEO PROMPT FROM FILE
+# ─────────────────────────────────────────────────────────────
+
+def load_seo_prompt(filepath: str) -> str:
+    """
+    Load SEO writing prompt from file.
+    """
+    if not Path(filepath).exists():
+        raise FileNotFoundError(
+            f"❌  Prompt file '{filepath}' not found. "
+            "Please create it in the project root."
+        )
+
+    with open(filepath, "r", encoding="utf-8") as f:
+        return f.read()
 
 
 # ─────────────────────────────────────────────────────────────
@@ -187,77 +206,42 @@ Respond ONLY with valid JSON array, no additional text, in this exact format:
 # GENERATE COMPLETE ARTICLE
 # ─────────────────────────────────────────────────────────────
 
-def generate_article(topic: dict, company: dict) -> str:
+def generate_article(topic: dict, company: dict, seo_prompt: str) -> str:
     """
     Generate a complete blog article in Markdown for a given topic.
+    Uses the SEO writing guidelines from seo_agent_prompt.txt.
     """
-    prompt = f"""You are an expert SEO writer. Write a complete blog article \\
-optimized for SEO in English.
+    # Prepare company context for the prompt template
+    prompt_context = f"""
+# ARTICLE ASSIGNMENT
 
-Company Information:
-- Name: {company['COMPANY_NAME']}
-- Industry: {company['INDUSTRY']}
-- Problem solved: {company['PROBLEM']}
-- Solution: {company['SOLUTION']}
-- Target audience: {company['TARGET_AUDIENCE']}
-- Tone: {company['TONE']}
-
-Article Topic:
+Sujet to write about:
 - Title: {topic.get('title', 'Article')}
 - Main keyword: {topic.get('main_keyword', '')}
 - Search intent: {topic.get('intent', '')}
-- Editorial angle: {topic.get('angle', '')}
+- Angle: {topic.get('angle', '')}
 
-Generate the complete article in Markdown following EXACTLY this structure:
-
----
-title: {topic.get('title', 'Article')}
-meta_description: [max 155 characters, include main keyword]
-keyword: {topic.get('main_keyword', '')}
-date: {datetime.date.today().isoformat()}
----
-
-# {topic.get('title', 'Article')}
-
-[Engaging introduction of 150-200 words. Present the problem, why it matters to the reader, and what they will learn. Include the keyword naturally.]
-
-## [H2 Title – Context or problem definition]
-
-[200-300 words. Develop the subject with data or statistics if relevant.]
-
-## [H2 Title – Main causes or challenges]
-
-[200-300 words.]
-
-## [H2 Title – Recommended solution or approach]
-
-[200-300 words. Mention {company['COMPANY_NAME']} naturally if relevant.]
-
-## [H2 Title – Practical implementation / concrete steps]
-
-[200-300 words. Actionable advice, bullet points where useful.]
-
-## [H2 Title – Common mistakes to avoid or FAQ]
-
-[200-300 words.]
-
-## Conclusion
-
-[100-150 words. Summarize key points and include a clear call-to-action inviting readers to \\
-discover {company['COMPANY_NAME']} or contact the team.]
-
----
-*Article written by {company['COMPANY_NAME']}*
-
-Rules to follow:
-- Main keyword must appear in H1, meta description, introduction, and at least 2 H2 sections
-- No keyword stuffing (natural density ~1-2%)
+Company Information:
+- Company Name: {company['COMPANY_NAME']}
+- Industry: {company['INDUSTRY']}
+- Problem Solved: {company['PROBLEM']}
+- Solution: {company['SOLUTION']}
+- Target Audience: {company['TARGET_AUDIENCE']}
 - Tone: {company['TONE']}
-- Use internal links like [link text](#) if relevant
-- Use bullet points to improve readability when appropriate"""
 
-    response = call_openai([{"role": "user", "content": prompt}], temperature=0.7)
+---
+
+{seo_prompt}
+
+---
+
+Now write the article for the above topic using these guidelines.
+Output ONLY the markdown article with the frontmatter, no additional text before or after.
+"""
+
+    response = call_openai([{"role": "user", "content": prompt_context}], temperature=0.7)
     return response
+
 
 
 # ─────────────────────────────────────────────────────────────
@@ -354,15 +338,20 @@ def main():
     print(f"    ✅  Industry: {company['INDUSTRY']}")
     print(f"    ✅  Articles: {company['NB_ARTICLES']}")
 
-    # 2. Create blog/ directory
+    # 2. Load SEO writing prompt
+    print(f"\n📋 Loading SEO prompt from '{PROMPT_FILE}'...")
+    seo_prompt = load_seo_prompt(PROMPT_FILE)
+    print(f"    ✅  SEO guidelines loaded.")
+
+    # 3. Create blog/ directory
     blog_path = Path(BLOG_FOLDER)
     blog_path.mkdir(exist_ok=True)
     print(f"\n📁 Directory '{BLOG_FOLDER}/' ready.")
 
-    # 3. Generate article topics
+    # 4. Generate article topics
     topics = generate_topics(company)
 
-    # 4. Generate each article
+    # 5. Generate each article
     articles_metadata = []
     errors = []
 
@@ -375,7 +364,7 @@ def main():
         print(f"  [{i}/{len(topics)}] {title[:65]}...")
 
         # Call API to generate article
-        article_content = generate_article(topic, company)
+        article_content = generate_article(topic, company, seo_prompt)
 
         if article_content is None:
             print(f"    ⚠️  Article skipped (API failed).")
@@ -406,7 +395,7 @@ def main():
         if i < len(topics):
             time.sleep(1)
 
-    # 5. Generate index
+    # 6. Generate index
     if articles_metadata:
         print(f"\n📑 Generating index...")
         index_content = generate_index(articles_metadata, company)
@@ -417,7 +406,7 @@ def main():
 
         print(f"    ✅  Index saved → {BLOG_FOLDER}/index.md")
 
-    # 6. Final report
+    # 7. Final report
     print("\n" + "=" * 60)
     print("  📊  FINAL REPORT")
     print("=" * 60)
