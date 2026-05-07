@@ -1,0 +1,5 @@
+.env
+company.txt
+blog/
+__pycache__/
+.venv/
