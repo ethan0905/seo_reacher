@@ -1,5 +1,5 @@
 """
-blog_generator.py
+seo_agent.py
 -----------------
 Automatically generates SEO-optimized blog articles
 from a company.txt file using the OpenAI API (gpt-4o).
