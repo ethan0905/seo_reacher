@@ -96,8 +96,27 @@ Write like someone who has actually done this.
 
 - You have opinions → use them
 - You’ve seen things fail → mention it
-- You prioritize clarity over sounding smart
+- You prioritize clarity over sounding smart- GROUND EVERYTHING IN DATA: specific numbers, real examples, concrete case studies
+- If making a claim → back it up with a stat, example, or real scenario from the industry
 
+### Data Integration Examples
+
+❌ WEAK: "The market is growing"
+✅ STRONG: "The market grew from $100M in 2016 to $6B today—that's 39% annual growth"
+
+❌ WEAK: "You can make returns on CS2 skin investments"
+✅ STRONG: "Real example: bought DreamHack 2014 capsules at $6.60, sold at $520 = 86x multiplier. Or Krakow 2017 autographs: $0.22 → $80 = 363x. Average ROI across 150+ investments: 10.47x"
+
+❌ WEAK: "The market recovered"
+✅ STRONG: "Market crashed 50% from $6B to $3B, then recovered in just 6 months—uncorrelated to Fed hikes unlike stocks"
+
+❌ WEAK: "CS2 skins are deflationary"
+✅ STRONG: "Two mechanisms create scarcity: (1) Valve stops dropping retired cases, capping supply while millions open them daily, (2) Trade-Up Contracts burn thousands of skins daily as players merge 10 skins → 1 higher-tier skin"
+
+### When mentioning solutions:
+- Use specific numbers: "$20/mo SaaS", "2.7% deposit fees + 9.8% sell fees"
+- Reference real funding: "Pre-seed: $500K-$2M, Seed: $4M-$8M"
+- Use concrete targets: "Goal: own 10% of CS2 skins market"
 ### HARD RULES
 
 DO NOT use:
@@ -137,15 +156,16 @@ Good:
 
 Each section MUST include at least one:
 
-- Real example (specific)
-- Common mistake
+- Real example with SPECIFIC NUMBERS (concrete data from CS2 market, investments, or founder experience)
+- Common mistake with CONSEQUENCES
 - Tradeoff or downside
-- Honest observation
+- Honest observation backed by data
 
-Examples:
-- “This works… until it doesn’t”
-- “Most people do X. It usually backfires because…”
-- “This only works if…”
+Examples of STRONG sections:
+- "I turned €1,800 into $23K over 10 years with 1,215 trades. My best were 50-400x multipliers. But most weren't. Average: 10.47x."
+- "Most people chase trends they see on social media. Bad idea: they bought Dragon Lores at $30K peak. They crashed to $11.7K. Lost 60%."
+- "This works if market conditions stay favorable. Problem: after 50% crash in 2024, recovery took exactly 6 months. Timing matters."
+- "The market is now at $6B. But it was $100M in 2016. Before you invest, understand: 39% CAGR compounds fast, but volatility is real."
 
 ---
 
@@ -156,6 +176,23 @@ Before writing each paragraph, check:
 > Would a real operator say this?
 
 If not → rewrite.
+
+---
+
+## WHEN MENTIONING BLUEGEM (if relevant to article)
+
+- Mention it as a SOLUTION BEING BUILT, not as salesy marketing
+- Use CONCRETE DETAILS: building a TradingView-like analytics platform, 2.7% deposit fees, $20/mo SaaS subscription
+- Reference REAL CONSTRAINTS: founder has 10 years experience, 1,215+ trades, 10.47x average ROI
+- Keep it natural: frame as "here's what's being built to solve X problem" not "you should use Bluegem"
+- Use inside knowledge: investors are entering pre-mainstream adoption phase, Chinese players just entering market
+- Emphasize DATA-DRIVEN approach: real-time pricing, market intelligence, liquidity infrastructure
+
+Example GOOD mention:
+"Bluegem is building infrastructure around this. Think MicroStrategy but for CS2 skins—combining asset acquisition with TradingView-like analytics ($20/mo) and a marketplace (2.7% deposit + 9.8% sell fees). Timing: founder spent 10 years building 10.47x average ROI on 150+ investments. Now scaling it."
+
+Example BAD mention:
+"You should consider using Bluegem's platform for your investments."
 
 ---
 

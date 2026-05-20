@@ -113,6 +113,27 @@ def load_seo_prompt(filepath: str) -> str:
 
 
 # ─────────────────────────────────────────────────────────────
+# LOAD CONTEXT FROM context.txt
+# ─────────────────────────────────────────────────────────────
+
+def load_context(filepath: str = "context.txt") -> str:
+    """
+    Load additional context from context.txt file.
+    This provides real-world data and concrete examples to make articles more authentic.
+    Returns empty string if file doesn't exist (optional file).
+    """
+    context_path = Path(filepath)
+    if not context_path.exists():
+        print(f"    ⚠️  Context file '{filepath}' not found (optional).")
+        return ""
+
+    with open(context_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    print(f"    ✅  Context loaded ({len(content)} chars).")
+    return content
+
+
+# ─────────────────────────────────────────────────────────────
 # OPENAI API CALL WITH ERROR HANDLING AND RETRY
 # ─────────────────────────────────────────────────────────────
 
@@ -149,14 +170,33 @@ def call_openai(messages: list, temperature: float = 0.7) -> str:
 # GENERATE ARTICLE TOPICS
 # ─────────────────────────────────────────────────────────────
 
-def generate_topics(company: dict) -> list:
+def generate_topics(company: dict, context: str = "") -> list:
     """
     Ask GPT-4o to generate a list of SEO-optimized article topics
     for the company in JSON format.
+    Uses context data to ensure articles are grounded in real examples.
     """
     print(f"\n📋 Generating {company['NB_ARTICLES']} article topics...")
 
-    prompt = f"""You are an SEO and content marketing expert.
+    context_section = ""
+    if context:
+        context_section = f"""
+REAL-WORLD CONTEXT & DATA (Use these to make articles concrete and credible):
+{context}
+
+---
+IMPORTANT: 
+- Reference specific numbers, examples, and data from the context above
+- Ground each article topic in real problems and real solutions
+- Make topics data-driven, not generic
+- Include specific investment examples, market metrics, and concrete use cases
+- Topics should demonstrate authentic expertise and insider knowledge
+
+"""
+
+    prompt = f"""You are an SEO and content marketing expert writing for a fintech/gaming investment audience.
+
+{context_section}
 
 Here is company information:
 - Name: {company['COMPANY_NAME']}
@@ -174,6 +214,8 @@ Each topic must:
 - Target a main keyword from the provided list or a relevant long-tail keyword
 - Be relevant to the target audience
 - Be varied (do not repeat the same angle)
+- Be grounded in CONCRETE DATA, SPECIFIC EXAMPLES, and REAL NUMBERS from the context
+- Avoid generic marketing language; focus on authentic expertise
 
 Respond ONLY with valid JSON array, no additional text, in this exact format:
 [
@@ -206,16 +248,35 @@ Respond ONLY with valid JSON array, no additional text, in this exact format:
 # GENERATE COMPLETE ARTICLE
 # ─────────────────────────────────────────────────────────────
 
-def generate_article(topic: dict, company: dict, seo_prompt: str) -> str:
+def generate_article(topic: dict, company: dict, seo_prompt: str, context: str = "") -> str:
     """
     Generate a complete blog article in Markdown for a given topic.
     Uses the SEO writing guidelines from seo_agent_prompt.txt.
+    Incorporates real context data to make articles concrete and credible.
     """
     # Prepare company context for the prompt template
+    context_injection = ""
+    if context:
+        context_injection = f"""
+REAL-WORLD DATA & EXPERTISE (Use these resources for concrete examples):
+---
+{context}
+---
+
+INSTRUCTIONS FOR THIS ARTICLE:
+- Use specific numbers, examples, and real-world data from the context above
+- Draw on founder experience, investment examples, and market data
+- Make claims concrete with refs to market size, growth rates, and real ROI examples
+- Demonstrate authentic expertise through specific use cases
+- Avoid vague statements; back everything up with data or examples
+- For {company['COMPANY_NAME']} positioning: frame as insider knowledge, not marketing
+- Include specific dollar amounts, percentages, or timeframes where relevant
+"""
+
     prompt_context = f"""
 # ARTICLE ASSIGNMENT
 
-Sujet to write about:
+Topic to write about:
 - Title: {topic.get('title', 'Article')}
 - Main keyword: {topic.get('main_keyword', '')}
 - Search intent: {topic.get('intent', '')}
@@ -229,13 +290,15 @@ Company Information:
 - Target Audience: {company['TARGET_AUDIENCE']}
 - Tone: {company['TONE']}
 
+{context_injection}
+
 ---
 
 {seo_prompt}
 
 ---
 
-Now write the article for the above topic using these guidelines.
+Now write the article for the above topic using these guidelines and real data.
 Output ONLY the markdown article with the frontmatter, no additional text before or after.
 """
 
@@ -338,20 +401,24 @@ def main():
     print(f"    ✅  Industry: {company['INDUSTRY']}")
     print(f"    ✅  Articles: {company['NB_ARTICLES']}")
 
-    # 2. Load SEO writing prompt
+    # 2. Load context.txt (optional but recommended)
+    print(f"\n📚 Loading context from 'context.txt'...")
+    context = load_context("context.txt")
+
+    # 3. Load SEO writing prompt
     print(f"\n📋 Loading SEO prompt from '{PROMPT_FILE}'...")
     seo_prompt = load_seo_prompt(PROMPT_FILE)
     print(f"    ✅  SEO guidelines loaded.")
 
-    # 3. Create blog/ directory
+    # 4. Create blog/ directory
     blog_path = Path(BLOG_FOLDER)
     blog_path.mkdir(exist_ok=True)
     print(f"\n📁 Directory '{BLOG_FOLDER}/' ready.")
 
-    # 4. Generate article topics
-    topics = generate_topics(company)
+    # 5. Generate article topics (with context)
+    topics = generate_topics(company, context)
 
-    # 5. Generate each article
+    # 6. Generate each article
     articles_metadata = []
     errors = []
 
@@ -363,8 +430,8 @@ def main():
 
         print(f"  [{i}/{len(topics)}] {title[:65]}...")
 
-        # Call API to generate article
-        article_content = generate_article(topic, company, seo_prompt)
+        # Call API to generate article (with context)
+        article_content = generate_article(topic, company, seo_prompt, context)
 
         if article_content is None:
             print(f"    ⚠️  Article skipped (API failed).")
@@ -395,7 +462,7 @@ def main():
         if i < len(topics):
             time.sleep(1)
 
-    # 6. Generate index
+    # 7. Generate index
     if articles_metadata:
         print(f"\n📑 Generating index...")
         index_content = generate_index(articles_metadata, company)
@@ -406,7 +473,7 @@ def main():
 
         print(f"    ✅  Index saved → {BLOG_FOLDER}/index.md")
 
-    # 7. Final report
+    # 8. Final report
     print("\n" + "=" * 60)
     print("  📊  FINAL REPORT")
     print("=" * 60)
@@ -429,6 +496,9 @@ def main():
     print(f"\n  💰  Estimated cost: ${cost:.4f} USD")
     print("=" * 60)
     print(f"\n✨  Done! Your articles are in the '{BLOG_FOLDER}/' folder.")
+    if context:
+        print(f"ℹ️   Articles are enriched with real-world data from context.txt")
+
 
 
 if __name__ == "__main__":
