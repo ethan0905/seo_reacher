@@ -31,6 +31,7 @@ except ModuleNotFoundError:
 COMPANY_FILE  = "company.txt"
 BLOG_FOLDER   = "blog"
 PROMPT_FILE   = "seo_agent_prompt.txt"
+DATE_FILE     = "date.txt"
 MODEL         = "gpt-4o-mini"
 RETRY_LIMIT   = 2
 RETRY_DELAY   = 3   # seconds between retry attempts
@@ -131,6 +132,41 @@ def load_context(filepath: str = "context.txt") -> str:
         content = f.read()
     print(f"    ✅  Context loaded ({len(content)} chars).")
     return content
+
+
+# ─────────────────────────────────────────────────────────────
+# GET CURRENT DATE FROM date.txt OR FALLBACK TO TODAY
+# ─────────────────────────────────────────────────────────────
+
+def get_current_date(date_file: str = "date.txt") -> datetime.date:
+    """
+    Load date from date.txt file. If not specified or empty, uses today's date.
+    date.txt should contain a date in YYYY-MM-DD or MM/DD/YYYY format.
+    """
+    date_path = Path(date_file)
+    
+    if date_path.exists():
+        content = date_path.read_text(encoding="utf-8").strip()
+        if content:
+            # Try YYYY-MM-DD format first
+            try:
+                return datetime.datetime.strptime(content, "%Y-%m-%d").date()
+            except ValueError:
+                pass
+            
+            # Try MM/DD/YYYY format
+            try:
+                return datetime.datetime.strptime(content, "%m/%d/%Y").date()
+            except ValueError:
+                pass
+            
+            print(f"    ⚠️  Invalid date format in '{date_file}': '{content}'. Using today's date.")
+        else:
+            print(f"    ⚠️  '{date_file}' is empty. Using today's date.")
+    else:
+        print(f"    ⚠️  '{date_file}' not found. Using today's date.")
+    
+    return datetime.date.today()
 
 
 # ─────────────────────────────────────────────────────────────
@@ -363,11 +399,15 @@ def estimate_cost(prompt_tokens: int, completion_tokens: int) -> float:
 # GENERATE INDEX
 # ─────────────────────────────────────────────────────────────
 
-def generate_index(articles_metadata: list, company: dict) -> str:
+def generate_index(articles_metadata: list, company: dict, current_date: datetime.date = None) -> str:
     """
     Generate index.md file summarizing all produced articles.
+    Uses provided current_date or defaults to today.
     """
-    today = datetime.date.today().strftime("%m/%d/%Y")
+    if current_date is None:
+        current_date = datetime.date.today()
+    
+    today = current_date.strftime("%m/%d/%Y")
     lines = [
         f"# Blog Index – {company['COMPANY_NAME']}",
         f"\n_Generated on {today} · {len(articles_metadata)} articles_\n",
@@ -405,7 +445,12 @@ def main():
     print(f"\n📚 Loading context from 'context.txt'...")
     context = load_context("context.txt")
 
-    # 3. Load SEO writing prompt
+    # 3. Load date from date.txt (or use today)
+    print(f"\n📅 Loading date from '{DATE_FILE}'...")
+    current_date = get_current_date(DATE_FILE)
+    print(f"    ✅  Date set to: {current_date.isoformat()}")
+
+    # 4. Load SEO writing prompt
     print(f"\n📋 Loading SEO prompt from '{PROMPT_FILE}'...")
     seo_prompt = load_seo_prompt(PROMPT_FILE)
     print(f"    ✅  SEO guidelines loaded.")
@@ -454,7 +499,7 @@ def main():
             "title":            title,
             "keyword":          keyword,
             "filename":         filename,
-            "date":             datetime.date.today().isoformat(),
+            "date":             current_date.isoformat(),
             "meta_description": extract_meta_description(article_content),
         })
 
@@ -462,10 +507,10 @@ def main():
         if i < len(topics):
             time.sleep(1)
 
-    # 7. Generate index
+    # 8. Generate index
     if articles_metadata:
         print(f"\n📑 Generating index...")
-        index_content = generate_index(articles_metadata, company)
+        index_content = generate_index(articles_metadata, company, current_date)
         index_path    = blog_path / "index.md"
 
         with open(index_path, "w", encoding="utf-8") as f:
