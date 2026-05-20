@@ -31,7 +31,7 @@ except ModuleNotFoundError:
 COMPANY_FILE  = "company.txt"
 BLOG_FOLDER   = "blog"
 PROMPT_FILE   = "seo_agent_prompt.txt"
-MODEL         = "gpt-4o"
+MODEL         = "gpt-4o-mini"
 RETRY_LIMIT   = 2
 RETRY_DELAY   = 3   # seconds between retry attempts
 

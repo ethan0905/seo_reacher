@@ -3,3 +3,7 @@ company.txt
 blog/
 __pycache__/
 .venv/
+*.MD
+blogs_*.*
+EXAMPLE_V0_COMPONENT.tsx
+context.txt
